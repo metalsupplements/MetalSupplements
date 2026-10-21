@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { 
-    getFirestore, collection, addDoc, getDocs, deleteDoc, doc 
+    getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -17,6 +17,7 @@ const db = getFirestore(app);
 
 const productosCollection = collection(db, "productos");
 const membresiasCollection = collection(db, "membresias");
+const ventasCollection = collection(db, "ventas"); // NUEVA COLECCIÓN DE VENTAS
 
 let inventarioGlobal = []; 
 let guardandoBloqueo = false; 
@@ -43,7 +44,11 @@ async function cargarVistaCliente() {
         gridMem.innerHTML = '';
         snapMembresias.forEach(doc => {
             const plan = doc.data();
-            let listaBeneficios = plan.productosIncluidos.map(p => `<li style="margin-bottom:8px;">✔️ <strong>${p.cantidad}x</strong> ${p.nombreProd}</li>`).join('');
+            let listaBeneficios = plan.productosIncluidos.map(p => `
+                <li style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+                    <img src="${p.imagenProd}" style="width:30px; height:30px; border-radius:5px; object-fit:cover;">
+                    <span><strong>${p.cantidad}x</strong> ${p.nombreProd}</span>
+                </li>`).join('');
 
             gridMem.innerHTML += `
                 <div class="card" style="border: 2px solid var(--warning); box-shadow: 0 10px 30px rgba(255, 179, 0, 0.1);">
@@ -52,7 +57,7 @@ async function cargarVistaCliente() {
                     <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 20px; line-height:1.5;">${plan.descripcion}</p>
                     <div style="background: #0a0a0a; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;">
                         <p style="margin:0 0 15px 0; color: white; font-weight:800; font-size:0.9em; text-transform:uppercase;">El plan incluye al mes:</p>
-                        <ul style="margin:0; padding-left: 5px; font-size: 0.9em; list-style:none; color:#ccc;">
+                        <ul style="margin:0; padding: 0; font-size: 0.9em; list-style:none; color:#ccc;">
                             ${listaBeneficios}
                         </ul>
                     </div>
@@ -64,7 +69,6 @@ async function cargarVistaCliente() {
             `;
         });
 
-        // NUEVO DISEÑO DE TARJETAS DE PRODUCTO (Problema de estiramiento solucionado)
         const snapProductos = await getDocs(productosCollection);
         gridMenu.innerHTML = ''; 
         snapProductos.forEach((doc) => {
@@ -79,17 +83,14 @@ async function cargarVistaCliente() {
                 </div>
             `;
         });
-    } catch(err) {
-        console.error("Error al cargar cliente:", err);
-    }
+    } catch(err) { console.error(err); }
 }
 
 // ==========================================
-// ADMIN Y CREADOR DE MEMBRESÍAS
+// ADMIN: FOTO Y CARGA INICIAL
 // ==========================================
 window.imagenBase64 = "https://via.placeholder.com/300";
 
-// Lógica de la cámara/galería con Vista Previa
 document.getElementById('imagen-upload').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -119,6 +120,7 @@ async function inicializarPanelAdmin() {
         querySnapshot.forEach((docSnap) => {
             const prod = docSnap.data();
             
+            // Tabla de inventario
             tabla.innerHTML += `
                 <tr>
                     <td><img src="${prod.imagen}" style="width: 50px; height: 50px; border-radius:8px; object-fit:cover; border:1px solid #333;"></td>
@@ -129,17 +131,20 @@ async function inicializarPanelAdmin() {
                 </tr>
             `;
 
+            // Checkbox con Imagen para Membresías
             divProductosCheck.innerHTML += `
-                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222; padding: 10px 0;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; margin:0; text-transform:none; font-weight:normal;">
-                        <input type="checkbox" class="check-prod-membresia" data-id="${docSnap.id}" data-nombre="${prod.nombre}" style="width:20px; margin:0;">
+                <div class="producto-check-item">
+                    <label style="display: flex; align-items: center; cursor: pointer; flex: 1; margin:0; text-transform:none; font-weight:normal; color:white;">
+                        <input type="checkbox" class="check-prod-membresia" data-id="${docSnap.id}" data-nombre="${prod.nombre}" data-img="${prod.imagen}" style="width:20px; margin:0 15px 0 0;">
+                        <img src="${prod.imagen}">
                         ${prod.nombre}
                     </label>
-                    <input type="number" id="cant-${docSnap.id}" placeholder="Cant." style="width: 80px; padding: 8px; margin: 0; background: #111;" disabled>
+                    <input type="number" id="cant-${docSnap.id}" placeholder="Cant." style="width: 80px; padding: 8px; margin: 0; background: #111; text-align:center;" disabled>
                 </div>
             `;
         });
 
+        // Lógica Eliminar
         document.querySelectorAll('.btn-eliminar').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 if (confirm("¿Eliminar producto permanentemente?")) {
@@ -152,6 +157,7 @@ async function inicializarPanelAdmin() {
             });
         });
 
+        // Lógica Checkbox
         document.querySelectorAll('.check-prod-membresia').forEach(chk => {
             chk.addEventListener('change', (e) => {
                 const inputNum = document.getElementById(`cant-${e.target.dataset.id}`);
@@ -161,18 +167,15 @@ async function inicializarPanelAdmin() {
             });
         });
 
-    } catch (err) {
-        console.error("Error Admin:", err);
-    }
+    } catch (err) { console.error("Error Admin:", err); }
 }
 
 // ==========================================
-// EVENTO: SUBIR PRODUCTO SUELTO
+// EVENTO: SUBIR PRODUCTO 
 // ==========================================
 document.getElementById('form-admin').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if(guardandoBloqueo) return; 
-    toggleBloqueo(true);
+    if(guardandoBloqueo) return; toggleBloqueo(true);
 
     const nuevoProducto = {
         nombre: document.getElementById('nombre').value,
@@ -189,14 +192,10 @@ document.getElementById('form-admin').addEventListener('submit', async (e) => {
         document.getElementById('form-admin').reset();
         document.getElementById('preview-foto').classList.add('oculto');
         window.imagenBase64 = "https://via.placeholder.com/300";
-        inicializarPanelAdmin(); 
-        cargarVistaCliente(); 
+        inicializarPanelAdmin(); cargarVistaCliente(); 
         alert("¡Producto añadido exitosamente!");
-    } catch (error) {
-        alert("Error al subir. Revisa consola F12.");
-    } finally {
-        toggleBloqueo(false);
-    }
+    } catch (error) { alert("Error al subir."); } 
+    finally { toggleBloqueo(false); }
 });
 
 // ==========================================
@@ -211,6 +210,7 @@ document.getElementById('form-membresia').addEventListener('submit', async (e) =
         productosSeleccionados.push({
             productoId: chk.dataset.id,
             nombreProd: chk.dataset.nombre,
+            imagenProd: chk.dataset.img, // Guardamos la imagen en el plan
             cantidad: parseInt(document.getElementById(`cant-${chk.dataset.id}`).value) || 1
         });
     });
@@ -229,17 +229,33 @@ document.getElementById('form-membresia').addEventListener('submit', async (e) =
     try {
         await addDoc(membresiasCollection, nuevaMembresia);
         document.getElementById('form-membresia').reset();
-        inicializarPanelAdmin(); 
-        cargarVistaCliente(); 
+        inicializarPanelAdmin(); cargarVistaCliente(); 
         alert("¡Plan Mensual generado y publicado!");
-    } catch (error) {
-        alert("Error al crear plan.");
-    } finally { toggleBloqueo(false); }
+    } catch (error) { alert("Error al crear plan."); } 
+    finally { toggleBloqueo(false); }
 });
 
 // ==========================================
-// MÓDULO: PUNTO DE VENTA (POS)
+// MÓDULO: PUNTO DE VENTA (POS) CON REGISTRO
 // ==========================================
+window.procesarVenta = async function(idProd, nombre, precio, stockActual) {
+    if(guardandoBloqueo) return; toggleBloqueo(true);
+    try {
+        // 1. Descontar Stock
+        await updateDoc(doc(db, "productos", idProd), { stock: stockActual - 1 });
+        // 2. Registrar Venta (Para las estadísticas)
+        await addDoc(ventasCollection, {
+            productoId: idProd,
+            nombre: nombre,
+            precio: precio,
+            fecha: new Date().toISOString()
+        });
+        alert(`¡Cobro Procesado de: ${nombre}!`);
+        cargarPOS(); // Recarga la vista del POS
+    } catch (e) { alert("Error en la venta: " + e.message); }
+    finally { toggleBloqueo(false); }
+}
+
 async function cargarPOS() {
     const resultados = document.getElementById('resultados-pos');
     inventarioGlobal = []; 
@@ -252,7 +268,6 @@ async function cargarPOS() {
             const filtrados = inventarioGlobal.filter(p => p.nombre.toLowerCase().includes(filtro.toLowerCase()));
             
             filtrados.forEach(prod => {
-                // Tarjetas POS Compactas y Estéticas
                 resultados.innerHTML += `
                     <div class="card" style="padding: 12px; border-color: ${prod.stock <= 0 ? '#ff2a2a' : '#2a2a2a'};">
                         <img src="${prod.imagen}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 10px;">
@@ -262,8 +277,8 @@ async function cargarPOS() {
                             <strong style="color:var(--success); font-size:1.1em;">$${prod.precio}</strong>
                         </div>
                         <button class="btn btn-success" style="padding: 10px; font-size: 0.8em; margin-top:auto;" ${prod.stock <= 0 ? 'disabled' : ''} 
-                            onclick="alert('Cobro Procesado: $${prod.precio}')">
-                            💰 Cobrar
+                            onclick="procesarVenta('${prod.id}', '${prod.nombre}', ${prod.precio}, ${prod.stock})">
+                            💰 Vender 1 pza
                         </button>
                     </div>
                 `;
@@ -271,9 +286,73 @@ async function cargarPOS() {
         }
         renderVentas();
         document.getElementById('buscador-pos').addEventListener('input', (e) => renderVentas(e.target.value));
-    } catch(err) { console.error("Error POS:", err); }
+    } catch(err) { console.error(err); }
+}
+
+// ==========================================
+// MÓDULO: ESTADÍSTICAS
+// ==========================================
+async function cargarEstadisticas() {
+    try {
+        const snap = await getDocs(ventasCollection);
+        let ventasDiarias = {}; let ventasSemanales = {}; let ventasMensuales = {}; let totales = {};
+
+        const ahora = new Date();
+        const hoyStr = ahora.toISOString().split('T')[0];
+        
+        // Calcular fechas para Semana y Mes
+        const hace7Dias = new Date(); hace7Dias.setDate(ahora.getDate() - 7);
+        const hace30Dias = new Date(); hace30Dias.setDate(ahora.getDate() - 30);
+
+        snap.forEach(d => {
+            const v = d.data();
+            const fechaVenta = new Date(v.fecha);
+            const fechaStr = v.fecha.split('T')[0];
+
+            // Acumular Total Histórico
+            if(!totales[v.nombre]) totales[v.nombre] = 0;
+            totales[v.nombre]++;
+
+            // Acumular Hoy
+            if(fechaStr === hoyStr) {
+                if(!ventasDiarias[v.nombre]) ventasDiarias[v.nombre] = 0;
+                ventasDiarias[v.nombre]++;
+            }
+            // Acumular Semana
+            if(fechaVenta >= hace7Dias) {
+                if(!ventasSemanales[v.nombre]) ventasSemanales[v.nombre] = 0;
+                ventasSemanales[v.nombre]++;
+            }
+            // Acumular Mes
+            if(fechaVenta >= hace30Dias) {
+                if(!ventasMensuales[v.nombre]) ventasMensuales[v.nombre] = 0;
+                ventasMensuales[v.nombre]++;
+            }
+        });
+
+        // Función para renderizar el HTML de los rankings
+        const renderRank = (objeto, max, desc = true) => {
+            let arr = Object.keys(objeto).map(nombre => ({ nombre, cant: objeto[nombre] }));
+            if(arr.length === 0) return "<p style='color:#666; font-size:0.9em;'>Sin datos suficientes.</p>";
+            
+            arr.sort((a,b) => desc ? b.cant - a.cant : a.cant - b.cant); // Ordenar
+            return arr.slice(0, max).map(i => `
+                <div class="stat-row">
+                    <span>${i.nombre}</span>
+                    <strong style="color: white; background: #333; padding: 2px 8px; border-radius: 5px;">${i.cant} pzas</strong>
+                </div>
+            `).join('');
+        };
+
+        document.getElementById('stats-hoy').innerHTML = renderRank(ventasDiarias, 3);
+        document.getElementById('stats-semana').innerHTML = renderRank(ventasSemanales, 3);
+        document.getElementById('stats-mes').innerHTML = renderRank(ventasMensuales, 3);
+        document.getElementById('stats-menos-vendidos').innerHTML = renderRank(totales, 5, false); // false = ascendente (menos vendidos)
+
+    } catch (err) { console.error("Error Estadísticas:", err); }
 }
 
 window.addEventListener('cargarAdmin', inicializarPanelAdmin);
 window.addEventListener('cargarPOS', cargarPOS);
+window.addEventListener('cargarEstadisticas', cargarEstadisticas);
 document.addEventListener('DOMContentLoaded', cargarVistaCliente);
