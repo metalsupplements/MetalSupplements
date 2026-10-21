@@ -133,10 +133,10 @@ async function inicializarPanelAdmin() {
 
             // Checkbox con Imagen para Membresías
             divProductosCheck.innerHTML += `
-                <div class="producto-check-item">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222; padding: 10px 0;">
                     <label style="display: flex; align-items: center; cursor: pointer; flex: 1; margin:0; text-transform:none; font-weight:normal; color:white; font-size:1.1em;">
                         <input type="checkbox" class="check-prod-membresia" data-id="${docSnap.id}" data-nombre="${prod.nombre}" data-img="${prod.imagen}" style="width:22px; height:22px; margin:0 15px 0 0;">
-                        <img src="${prod.imagen}">
+                        <img src="${prod.imagen}" style="width: 45px; height: 45px; border-radius: 8px; object-fit: cover; margin-right: 15px; border: 1px solid #444;">
                         ${prod.nombre}
                     </label>
                     <input type="number" id="cant-${docSnap.id}" placeholder="Cant." style="width: 80px; padding: 10px; margin: 0; background: #111; text-align:center; font-size:1.1em;" disabled>
@@ -288,13 +288,12 @@ async function cargarPOS() {
 }
 
 // ==========================================
-// MÓDULO: ESTADÍSTICAS REPARADO (Cero fallos)
+// MÓDULO: ESTADÍSTICAS
 // ==========================================
 async function cargarEstadisticas() {
     try {
         const snap = await getDocs(ventasCollection);
         
-        // Si la base de datos está vacía, no se queda cargando, muestra esto:
         if (snap.empty) {
             const msjVacio = "<p style='color:#666; font-size:0.9em; font-style:italic;'>Aún no hay ventas registradas.</p>";
             document.getElementById('stats-hoy').innerHTML = msjVacio;

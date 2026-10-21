@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Metal Supplements ERP</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- EL ?v=2.0 OBLIGA A TU NAVEGADOR A ACTUALIZAR EL DISEÑO -->
+    <link rel="stylesheet" href="style.css?v=2.0">
 </head>
 <body>
     <div id="ui-bloqueo" class="bloqueo-ui oculto">⏳ Sincronizando...</div>
@@ -63,7 +64,7 @@
                 <button class="btn" onclick="buscarMembresia()">Buscar Registro</button>
 
                 <div id="perfil-cliente" class="oculto" style="margin-top: 25px; text-align: center; border-top: 1px solid #333; padding-top: 20px;">
-                    <img src="https://ui-avatars.com/api/?name=Ali+Sant&background=ff2a2a&color=fff" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px;">
+                    <img src="https://ui-avatars.com/api/?name=Ali+Sant&background=ff2a2a&color=fff" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 15px; display:inline-block;">
                     <h3 style="margin: 0;">Ali Sant</h3>
                     <p style="color: var(--warning); margin: 5px 0 15px 0; font-weight: bold; letter-spacing: 1px;">VIP METAL</p>
                     
@@ -82,7 +83,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- VISTA ADMIN (ERP) - PESTAÑAS BLINDADAS         -->
+    <!-- VISTA ADMIN (ERP) - PESTAÑAS 100% SEPARADAS    -->
     <!-- ============================================== -->
     <div id="vista-admin" class="pantalla container oculto">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap:15px;">
@@ -90,20 +91,19 @@
             <button class="btn" style="width: auto; background: #222; margin:0;" onclick="cambiarPantalla('vista-login')">Cerrar Sesión</button>
         </div>
 
-        <!-- NAVEGACIÓN DE PESTAÑAS REPARADA -->
-        <div class="admin-nav">
-            <button class="tab-btn activo" onclick="cambiarTabAdmin('tab-productos', this)">📦 Subir Productos</button>
-            <button class="tab-btn" onclick="cambiarTabAdmin('tab-membresias', this)">💳 Crear Mensualidad</button>
-            <button class="tab-btn" onclick="cambiarTabAdmin('tab-estadisticas', this)">📊 Estadísticas</button>
+        <!-- NAVEGACIÓN SUPERIOR DEL ADMIN -->
+        <div style="display: flex; gap: 5px; margin-bottom: 30px; border-bottom: 1px solid #333; overflow-x: auto;">
+            <button id="btn-tab-prod" class="btn-tab activo" onclick="abrirPestana('prod')">📦 Inventario</button>
+            <button id="btn-tab-mem" class="btn-tab" onclick="abrirPestana('mem')">💳 Mensualidades</button>
+            <button id="btn-tab-stat" class="btn-tab" onclick="abrirPestana('stat')">📊 Estadísticas</button>
         </div>
 
-        <!-- CONTENEDORES DE PESTAÑAS -->
-        <div id="contenido-tabs">
-            
-            <!-- TAB 1: PRODUCTOS E INVENTARIO -->
-            <div id="tab-productos" class="admin-tab activo">
-                <div class="card" style="max-width: 800px; margin: 0 auto 30px auto; border-top: 4px solid var(--primary);">
-                    <h3 style="color: var(--primary); margin-top:0;">1. Alta de Producto Nuevo</h3>
+        <!-- PESTAÑA 1: INVENTARIO (Visible por defecto) -->
+        <div id="vista-prod" style="display: block; animation: fadeIn 0.4s;">
+            <div class="grid" style="grid-template-columns: 1fr 2fr;">
+                
+                <div class="card" style="border-top: 4px solid var(--primary);">
+                    <h3 style="color: var(--primary); margin-top:0;">Alta de Producto Nuevo</h3>
                     <form id="form-admin">
                         <label>Nombre del Producto</label>
                         <input type="text" id="nombre" placeholder="Ej. King Kong Pre-Workout" required>
@@ -141,63 +141,59 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- TAB 2: MEMBRESÍAS -->
-            <div id="tab-membresias" class="admin-tab">
-                <div class="card" style="max-width: 800px; margin: auto; border-top: 4px solid var(--warning);">
-                    <h3 style="color: var(--warning); margin-top:0;">2. Ensamblar Mensualidad</h3>
-                    <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 20px;">Crea un plan y selecciona qué productos del inventario incluye mensualmente. Las imágenes se mostrarán automáticamente al cliente.</p>
-                    <form id="form-membresia">
-                        <label>Nombre del Plan</label>
-                        <input type="text" id="mem-nombre" placeholder="Ej. Plan Metal VIP" required>
-                        
-                        <label>Costo Mensual (\$)</label>
-                        <input type="number" id="mem-precio" required>
-                        
-                        <label>Descripción Comercial</label>
-                        <input type="text" id="mem-desc" placeholder="Atrae a tus clientes con beneficios" required>
-                        
-                        <label style="color: white; margin-top: 20px; font-size: 1em;">Selecciona el contenido del mes:</label>
-                        <div id="lista-productos-check" style="background: #0a0a0a; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; border: 1px solid #333;">
-                            <!-- JS inyectará checkboxes con fotos aquí -->
-                        </div>
-
-                        <button type="submit" class="btn" style="margin-top: 30px; background: var(--warning); color: #000;">Generar Plan Mensual</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- TAB 3: ESTADÍSTICAS -->
-            <div id="tab-estadisticas" class="admin-tab">
-                <div class="grid">
-                    <!-- TOP VENDIDOS -->
-                    <div class="card" style="border-top: 4px solid var(--success);">
-                        <h3 style="margin-top:0; color: var(--success); display:flex; align-items:center; gap:10px;">🔥 Más Vendidos</h3>
-                        
-                        <h4 style="color:white; margin:15px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Hoy</h4>
-                        <div id="stats-hoy"></div>
-
-                        <h4 style="color:white; margin:20px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Esta Semana</h4>
-                        <div id="stats-semana"></div>
-
-                        <h4 style="color:white; margin:20px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Este Mes</h4>
-                        <div id="stats-mes"></div>
+        <!-- PESTAÑA 2: MEMBRESÍAS (Oculto) -->
+        <div id="vista-mem" style="display: none; animation: fadeIn 0.4s;">
+            <div class="card" style="max-width: 800px; margin: auto; border-top: 4px solid var(--warning);">
+                <h3 style="color: var(--warning); margin-top:0;">Ensamblar Mensualidad</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 20px;">Crea un plan y selecciona qué productos del inventario incluye mensualmente.</p>
+                <form id="form-membresia">
+                    <label>Nombre del Plan</label>
+                    <input type="text" id="mem-nombre" placeholder="Ej. Plan Metal VIP" required>
+                    
+                    <label>Costo Mensual (\$)</label>
+                    <input type="number" id="mem-precio" required>
+                    
+                    <label>Descripción Comercial</label>
+                    <input type="text" id="mem-desc" placeholder="Atrae a tus clientes con beneficios" required>
+                    
+                    <label style="color: white; margin-top: 20px; font-size: 1em;">Selecciona el contenido del mes:</label>
+                    <div id="lista-productos-check" style="background: #0a0a0a; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; border: 1px solid #333;">
+                        <!-- JS inyectará checkboxes con fotos aquí -->
                     </div>
 
-                    <!-- MENOS VENDIDOS -->
-                    <div class="card" style="border-top: 4px solid var(--primary);">
-                        <h3 style="margin-top:0; color: var(--primary); display:flex; align-items:center; gap:10px;">🧊 Menos Vendidos (Histórico)</h3>
-                        <div id="stats-menos-vendidos"></div>
-                    </div>
+                    <button type="submit" class="btn" style="margin-top: 30px; background: var(--warning); color: #000;">Generar Plan Mensual</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- PESTAÑA 3: ESTADÍSTICAS (Oculto) -->
+        <div id="vista-stat" style="display: none; animation: fadeIn 0.4s;">
+            <div class="grid" style="grid-template-columns: 1fr 1fr;">
+                
+                <div class="card" style="border-top: 4px solid var(--success);">
+                    <h3 style="margin-top:0; color: var(--success);">🔥 Más Vendidos</h3>
+                    <h4 style="color:white; margin:15px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Hoy</h4>
+                    <div id="stats-hoy"></div>
+                    <h4 style="color:white; margin:20px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Esta Semana</h4>
+                    <div id="stats-semana"></div>
+                    <h4 style="color:white; margin:20px 0 5px 0; border-bottom: 1px solid #333; padding-bottom:5px;">Este Mes</h4>
+                    <div id="stats-mes"></div>
+                </div>
+
+                <div class="card" style="border-top: 4px solid var(--primary);">
+                    <h3 style="margin-top:0; color: var(--primary);">🧊 Menos Vendidos (Histórico)</h3>
+                    <div id="stats-menos-vendidos"></div>
                 </div>
             </div>
+        </div>
 
-        </div> <!-- Fin Contenedores Tabs -->
     </div>
 
     <script type="module" src="app.js"></script>
     <script>
-        // NAVEGACIÓN SPA
+        // NAVEGACIÓN SPA GENERAL
         function cambiarPantalla(idPantalla) {
             document.querySelectorAll('.pantalla').forEach(p => p.classList.add('oculto'));
             document.getElementById(idPantalla).classList.remove('oculto');
@@ -212,6 +208,23 @@
             window.imagenBase64 = "https://via.placeholder.com/300"; 
         }
 
+        // CONTROLADOR DE PESTAÑAS ADMIN (METODO INFALIBLE)
+        function abrirPestana(idFiltro) {
+            // 1. Ocultar todas las vistas a la fuerza
+            document.getElementById('vista-prod').style.display = 'none';
+            document.getElementById('vista-mem').style.display = 'none';
+            document.getElementById('vista-stat').style.display = 'none';
+            
+            // 2. Quitar el color a todos los botones
+            document.getElementById('btn-tab-prod').classList.remove('activo');
+            document.getElementById('btn-tab-mem').classList.remove('activo');
+            document.getElementById('btn-tab-stat').classList.remove('activo');
+
+            // 3. Mostrar solo lo seleccionado
+            document.getElementById('vista-' + idFiltro).style.display = 'block';
+            document.getElementById('btn-tab-' + idFiltro).classList.add('activo');
+        }
+
         function verificarLogin() {
             const pin = document.getElementById('input-pin').value;
             if (pin === "1111") {
@@ -219,23 +232,13 @@
                 window.dispatchEvent(new Event('cargarPOS')); 
             } else if (pin === "9999") {
                 cambiarPantalla('vista-admin');
+                abrirPestana('prod'); // Forzar que inicie en productos
                 window.dispatchEvent(new Event('cargarAdmin'));
                 window.dispatchEvent(new Event('cargarEstadisticas')); 
             } else {
                 alert("PIN Incorrecto. Intenta con 1111 o 9999.");
             }
             document.getElementById('input-pin').value = '';
-        }
-
-        // LÓGICA DE PESTAÑAS (TABS) REPARADA
-        function cambiarTabAdmin(idTab, btnElement) {
-            // Oculta todas las pestañas forzosamente
-            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('activo'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('activo'));
-            
-            // Muestra solo la que se hizo clic
-            document.getElementById(idTab).classList.add('activo');
-            btnElement.classList.add('activo');
         }
 
         // POS SIMULACIÓN CLIENTE
